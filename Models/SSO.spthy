@@ -1,0 +1,173 @@
+/****MODEL****/
+
+theory SSO
+
+begin
+
+builtins: signing, asymmetric-encryption
+
+rule send_secure:
+	[SndS(A,B,m)]
+	-->
+	[Sec(A,B,m)]
+
+rule receive_secure:
+	[Sec(A,B,m)]
+	-->
+	[RcvS(A,B,m)]
+
+rule send_dy:
+	[SndDY(A,B,m)]
+	-->
+	[Out(<A,B,m>)]
+
+rule receive_dy:
+	[In(<A,B,m>)]
+	-->
+	[RcvDY(A,B,m)]
+
+rule Register_pk:
+  [ Fr(~x) ] -->[ !Ltk($nx, ~x), !Pk($nx, pk(~x)), Out(pk(~x))]
+
+rule Register_pkNotReveal:
+  [ Fr(~ltkIdP) ] -->[ !IdPLtk($IdP, ~ltkIdP), !PkIdP($IdP, pk(~ltkIdP)), Out(pk(~ltkIdP))]
+
+rule Reveal_ltk:
+  [ !Ltk($A, ltkA) ] --[ RevLtk($A)]-> [ Out(ltkA) ]
+
+/****RULES****/
+
+rule setup:
+	[ Fr(~id_SP)]
+	--[Roles($Client,$SP,$IdP)]->
+	[ State($Client,'1',<$SP>)
+	, State($SP,'1',<~id_SP>)
+	, State($IdP,'1',<'init'>)]
+
+rule C_1:
+	let 
+		httpReq = aenc{'get', ~URI, $Client, 'nil'}pkSP
+	in
+	[State($Client,'1',<$SP>),Fr(~URI),!Pk($SP, pkSP)]
+	--[OUT_C_1(httpReq)]->
+	[State($Client,'2',<$SP,~URI>),SndDY($Client,$SP,httpReq)]
+
+rule SP_1:
+	let 
+		httpReq = aenc{'get', URI, Client, 'nil'}pk(ltkSP)
+		authReq = <id_SP, $SP>
+		httpResp = sign{'code302', $IdP, authReq, URI, 'nil'}ltkSP 
+	in
+	[State($SP,'1',<id_SP>),RcvDY(Client,$SP,httpReq), !Ltk($SP, ltkSP)]
+	--[IN_SP_1_uri(URI,httpReq),OUT_SP_2(httpResp)]->
+	[State($SP,'2',<id_SP,URI,Client>),SndS($SP,Client,httpResp)]
+
+rule C_2:
+	let
+		authReq = <id_SP, SP>
+		httpResp = sign{'code302', IdP, authReq, URI, 'nil'}ltkSP 
+		httpReq = aenc{'get', IdP, authReq, URI, 'nil'}pkIdP
+	in
+	[State(Client,'2',<SP,URI>),RcvDY(SP,Client,httpResp),!Pk(SP,pkSP),!PkIdP(IdP,pkIdP)]
+	--[Running(SP,Client,<id_SP, Client, IdP, SP>),IN_C_2_id_sp(id_SP,httpResp),OUT_C_2(httpReq)]->
+	[State(Client,'3',<SP,URI,IdP,id_SP>),SndS(Client,IdP,httpReq)]																			
+
+rule IdP_1:
+	let 
+		authReq = <id_SP, SP>
+		httpReq = aenc{'get', $IdP, authReq, URI, 'nil'}pk(ltkIdP)
+		msg = < id_SP, Client, $IdP, SP >
+		AA = sign{ msg }ltkIdP	
+		respIdP = sign{'code200','nil',SP,AA,URI}ltkIdP
+		httpRespIdP = aenc{respIdP}pkClient
+	in
+	[State($IdP,'1',<'init'>),RcvS(Client,$IdP,httpReq), !IdPLtk($IdP, ltkIdP), !Pk(Client,pkClient)]
+	--[H(),IN_IdP_1_id_sp(id_SP,httpReq)]->
+	[SndS($IdP,Client,httpRespIdP)]
+
+rule C_3:
+	let
+		msg = < id_SP, Client, IdP, SP >
+		AA = sign{ msg }ltkIdP	
+		httpReq = aenc{'post', SP, 'nil', AA, URI}pkSP
+		msgIdP = <'code200','nil',SP,AA,URI>
+		respIdP = sign{msgIdP}ltkIdP
+		httpRespIdP = aenc{respIdP}pkClient
+	in
+	[State(Client,'3',<SP,URI,IdP,id_SP>),RcvS(IdP,Client,httpRespIdP),!Pk(SP,pkSP), !PkIdP(IdP,pkIdP), !Ltk(Client, ltkClient)]
+	--[Eq(verify(respIdP,msgIdP,pkIdP),true)]->
+	[State(Client,'4',<SP,URI,IdP,id_SP>),SndDY(Client,SP,httpReq)]	
+
+rule SP_2:
+	let 
+		msg = < id_SP, Client, IdP, SP >
+		AA = sign{ msg }ltkIdP	
+		httpReq = aenc{'post', SP, 'nil', AA, URI}pk(ltkSP)
+		httpResp = sign{'code200',URI,'resource'}ltkSP
+	in
+	[State(SP,'2',<id_SP,URI,Client>),RcvDY(Client,SP,httpReq), !PkIdP(IdP,pkIdP), !Ltk(SP, ltkSP)]
+	--[Commit(SP,Client,<id_SP, Client, IdP, SP>),Eq(verify(AA,msg,pkIdP),true)]->
+	[SndS(SP,Client,httpResp)]	
+
+rule C_4:
+	let 
+		msgX = <'code200',URI,'resource'>
+		httpResp = sign{msgX}ltkSP
+	in
+	[State(Client,'4',<SP,URI,IdP,id_SP>),RcvDY(SP,Client,httpResp),!Pk(SP,pkSP)]
+	--[Receive(SP,<'code200',URI,'resource'>),Eq(verify(httpResp,msgX,pkSP),true)]->
+	[]
+
+
+/****ENDOFRULES****/
+
+restriction Equality:
+  "All x y #i. Eq(x,y) @i ==> x = y"
+
+lemma types [sources]:
+	"(All uri m1 #i.
+		IN_SP_1_uri(uri, m1) @i 
+		==>
+		((Ex #j. KU(uri) @j & j<i)
+		| (Ex #j. OUT_C_1(m1) @ j)
+		)
+	)
+	& (All id_sp m2 #i.
+		IN_C_2_id_sp(id_sp, m2) @i 
+		==>
+		((Ex #j. KU(id_sp) @j & j<i)
+		| (Ex #j. OUT_SP_2(m2) @ j)
+		)
+	)
+	& (All id_sp m2 #i.
+		IN_IdP_1_id_sp(id_sp, m2) @i 
+		==>
+		((Ex #j. KU(id_sp) @j & j<i)
+		| (Ex #j. OUT_C_2(m2) @ j)
+		)
+	)"
+
+// Injective agreement from the perspective of both the initiator and the responder.
+lemma injective_agree:
+  " /* Whenever somebody commits to running a session, then*/
+    All actor peer params #i.
+        Commit(actor, peer, params) @ i
+      ==>
+        /* there is somebody running a session with the same parameters */
+          (Ex #j. Running(actor, peer, params) @ j & j < i
+            /* and there is no other commit on the same parameters */
+            & not(Ex actor2 peer2 #i2.
+                    Commit(actor2, peer2, params) @ i2 & not(#i = #i2)
+                 )
+          )
+        /* or the adversary perform a long-term key reveal on actor or peer */
+        | (Ex #r. RevLtk(actor) @ r)
+        | (Ex #r. RevLtk(peer)  @ r)
+  "
+
+lemma functional: exists-trace
+	"(Ex SP URI #m. Receive(SP,<'code200',URI,'resource'>)@m)"
+
+end
+
+/****ENDOFMODEL****/
