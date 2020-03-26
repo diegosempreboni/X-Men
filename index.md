@@ -1,7 +1,7 @@
 ## Welcome to the repository for X-Men: A Mutation-Based Approach for the Formal Analysis of Security Ceremonies
 
 Team:
-Diego Sempreboni, [Luca Viganò](http://www.lucavigano.com)
+**Diego Sempreboni, [Luca Viganò](http://www.lucavigano.com)**
 
 # Description
 
