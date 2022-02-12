@@ -83,6 +83,8 @@ To get a local copy up and running follow these simple example steps.
     ```url
     https://tamarin-prover.github.io/manual/book/002_installation.html
     ```
+    
+    <p align="right">(<a href="#top">back to top</a>)</p>
 
 ### Installation
 
