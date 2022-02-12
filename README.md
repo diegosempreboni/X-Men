@@ -51,7 +51,7 @@ This section list any major frameworks/libraries used to bootstrap the project.
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up the project locally.
+This is how you can set up the project locally.
 To get a local copy up and running follow these simple example steps.
 
 ### Prerequisites
