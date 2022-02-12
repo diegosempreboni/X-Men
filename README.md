@@ -86,7 +86,7 @@ To get a local copy up and running follow these simple example steps.
     
     <p align="right">(<a href="#top">back to top</a>)</p>
 
-### Installation
+### Installation & running
 
 Please follow the instruction below on how to run the X-Men tool:
 
