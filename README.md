@@ -89,8 +89,9 @@ To get a local copy up and running follow these simple example steps.
 Please follow the instruction below on how to run the X-Men tool:
 
 1. Be sure that Java, Python and Tamarin are correctly installed on your machine.
-2. Open a terminal and go to the folder which cointains the wolverine.py file
-3. Execute wolverine.py using:
+2. Download the project folder on your machine.
+3. Open a terminal and go to the folder which cointains the wolverine.py file
+4. Execute wolverine.py using:
    ```sh
    python3 wolverine.py
    ```
