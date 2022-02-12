@@ -40,7 +40,7 @@ X-Men: A Mutation-Based Approach for the Formal Analysis of Security Ceremonies
 
 ### Built With
 
-This section should list any major frameworks/libraries used to bootstrap your project. Leave any add-ons/plugins for the acknowledgements section. Here are a few examples.
+This section list any major frameworks/libraries used to bootstrap the project. 
 
 * [Python](https://www.python.org)
 * [ANTLR](https://www.antlr.org)
