@@ -115,4 +115,37 @@ Please follow the instruction below on how to run the X-Men tool:
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+## Specification
+
+Tamarin uses C-style comments, so everything between /* and */ or the line following // is a comment. We take advantage of comments in the X-Men framework to divide the internal structure of the models in three sections as shown here:
+
+/****MODEL****/
+
+theory theory_name
+
+begin
+
+/* Channel rules */
+
+/****RULES****/
+
+builtins: ...
+
+functions: ...
+
+/* Protocol/Ceremony Rules */
+
+/****ENDOFRULES****/
+
+/* Restrictions and Lemmas */
+
+end
+
+/****ENDOFMODEL****/
+
+
+The comments /****MODEL****/ and /****ENDOFMODEL****/ set the boundaries of the entire file. Within these boundaries, there are:
+  - \item an inner bound (from /****MODEL****/ to /****RULES****/) where the channel rules are defined;
+  - \item an inner bound (from /****RULES****/  to /****ENDOFRULES****/) where functions and the ceremony rules are defined;
+  - \item an inner bound (from /****ENDOFRULES****/ to /****ENDOFMODEL****/) where the restrictions and the lemmas are defined.
 
